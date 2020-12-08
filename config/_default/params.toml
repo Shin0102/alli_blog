@@ -84,7 +84,7 @@ enableLangChange = false # show button at bottom left of footer.
 # service
 googleTagManager = "" # GTM-XXXXXX
 baiduAnalytics = "" # alternative of google analytics
-enableBusuanzi = true # if set true, total page view, total unique visitors show up in the footer.
+enableBusuanzi = false # if set true, total page view, total unique visitors show up in the footer.
 busuanziSiteUV = true # unique visitors (total number of visitors)
 busuanziSitePV = true # site total page view count
 busuanziPagePV = true # post view count
@@ -139,9 +139,9 @@ commento = false
 
 # Isso: https://posativ.org/isso/
 [isso]
-  enable = false
-  scriptSrc = "" # "https://isso.example.com/js/embed.min.js"
-  dataAttrs = "" # "data-isso='https://isso.example.com' data-isso-require-author='true'"
+  enable = true
+  scriptSrc = "https://54.180.114.185:8080/js/embed.min.js" # "https://isso.example.com/js/embed.min.js"
+  dataAttrs = "http://54.180.114.185:8080" # "data-isso='https://isso.example.com' data-isso-require-author='true'"
 
 [socialOptions] # if set, social icons will show up.
   email = "mailto:shinalli0102@gamil.com"
