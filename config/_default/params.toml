@@ -96,7 +96,7 @@ fullContents = false
 
 # comment
 enableComment = true
-disqus_shortname = "" 
+disqus_shortname = "shin0102-github-io" 
 commento = false
 
 [gitment]          # Gitment is a comment system based on GitHub issues. see https://github.com/imsun/gitment
@@ -139,9 +139,9 @@ commento = false
 
 # Isso: https://posativ.org/isso/
 [isso]
-  enable = true
-  scriptSrc = "https://54.180.114.185:8080/js/embed.min.js" # "https://isso.example.com/js/embed.min.js"
-  dataAttrs = "http://54.180.114.185:8080" # "data-isso='https://isso.example.com' data-isso-require-author='true'"
+  enable = false
+  scriptSrc = "" # "https://isso.example.com/js/embed.min.js"
+  dataAttrs = "" # "data-isso='https://isso.example.com' data-isso-require-author='true'"
 
 [socialOptions] # if set, social icons will show up.
   email = "mailto:shinalli0102@gamil.com"
