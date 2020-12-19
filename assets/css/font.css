@@ -1,11 +1,17 @@
 @font-face {
-    font-family: 'BinggraeMelona';
-    src: url('../fonts/BinggraeMelona.ttf') format('truetype');
-    font-style: normal;
+  font-family: "BinggraeMelona";
+  src: url("../fonts/BinggraeMelona.ttf") format("truetype");
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'BinggraeMelonaBold';
-    src: url('../fonts/BinggraeMelona-Bold.ttf') format('truetype');
-    font-style: 900;
+  font-family: "BinggraeMelonaBold";
+  src: url("../fonts/BinggraeMelona-Bold.ttf") format("truetype");
+  font-style: 900;
+}
+
+@font-face {
+  font-family: "NanumGothic";
+  src: url("../fonts/NanumGothic.ttf") format("truetype");
+  font-style: normal;
 }
