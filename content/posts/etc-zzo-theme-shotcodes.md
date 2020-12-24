@@ -2,7 +2,8 @@
 title: "zzo theme shortcodes"
 subtitle: 
 date: 2020-12-06
-description:
+description: 
+- "zzo theme shortcodes"
 meta_image: static/images/whoami/avatar.png
 tags:
 - zzo theme
@@ -11,6 +12,10 @@ categories:
 libraries:
 - flowchartjs
 ---
+
+#### hugo zzo 테마에서 사용 가능한 shortcodes
+---
+&nbsp;&nbsp;&nbsp;기본적으로 Markdown 문법도 제공하지만, 아래 shortcode들도 사용가능해서 블로그 쓰는데 유용할 것 같다. 이외에도 flowchartjs등 차트라이브러리도 사용가능하다.
 
 {{< alert theme="warning" >}}
 **this** is a text
