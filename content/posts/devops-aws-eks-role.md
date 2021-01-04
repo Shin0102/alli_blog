@@ -5,7 +5,8 @@ date: 2020-12-19
 description: 
 - "AWS EKS Role에 대한 고찰"
 - "Your current user or role does not have access to Kubernetes objects on this EKS cluster"
-meta_image: static/images/whoami/avatar.png
+image: images/aws-eks.png
+meta_image: static/images/aws-eks.png
 tags:
 - aws eks
 - cdk
