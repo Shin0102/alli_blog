@@ -50,7 +50,8 @@ Kubernetes deploymnet.yaml의 image tag에 빌드된 이미지의 태그가 업�
 ```yml
 on:
   push:
-    branches:   # feature branch에 push 될때 github action 실행
+    branches:   # master, feature branch에 push 될때 github action 실행
+      - master
       - feature
 
 name: Docker Image build & k8s deployment.yaml update   # github action 이름
@@ -65,6 +66,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 2
+
     #
     # Push app image to ECR
     # build 한 Docker Image를 AWS ECR에 push하기 위해 ECR Login 선행
@@ -84,7 +86,7 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: repo_name       # 저장할 ECR repo 이름을 넣어야 됨!
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }} # github secret에 정의된 ECR_REPOSITORY NAME
         IMAGE_TAG: ${{ github.sha }}    # 이미지 태그는 github sha 이용
       run: |
         # Build a docker container and
@@ -93,6 +95,7 @@ jobs:
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
     #
     # Update Image tag to delployment.yaml
     # 위에서 build한 이미지 태그를 업데이트
@@ -106,7 +109,7 @@ jobs:
         git config --global user.name "$USER_NAME"
     - name: Install git ssh key # git push 하기 위한 ssh key 세팅
       env:
-        GIT_SSH_KEY: ${{ secrets.GIT_SSH_KEY }} # github secret에 정의된 GIT_SSH_KEY
+        GIT_SSH_KEY: ${{ secrets.GIT_SSH_KEY }} 
       run: |
         mkdir -p ~/.ssh/
         echo "$GIT_SSH_KEY" > ~/.ssh/id_rsa
@@ -125,16 +128,16 @@ jobs:
     # 이미지 태그 업데이트는 sed 명령어와 regex를 이용하여 업데이트.
     # k8s resoure 경로는 k8s-dev/*.yaml
     #
-    - name: Update feature delployment.yaml 
+    - name: Update dev delployment.yaml 
       if: ${{ steps.extract_branch.outputs.branch }} == 'feature'   # feature branch일 경우 dev 배포
       run: |
         git reset --soft HEAD~1
-        sed -i -e 's@/repo_name:.*@/repo_name:${{ github.sha }}@g' k8s-dev/deployment.yaml 
+        sed -i -e 's@${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:.*@${{ steps.build-image.outputs.image }}@g' k8s-dev/deployment.yaml 
         git add .
         git commit -m "${{ github.event.head_commit.message }}"
         git push -f --set-upstream origin ${{ steps.extract_branch.outputs.branch }}
 ```
-&nbsp;&nbsp;&nbsp;feature branch에 push 될때 dev서버에 업데이트 하기위한 github action이다. 구조를 보면 **트리거 / build 환경 / 실제 수행할 step**들이 정의되어 있다. 자세한 설명은 주석으로 추가하였다. AWS ACCESS KEY와 Github ssh key는 Github secret에 설정한 값을 가져오도록 하였다. Github secret 설정과 37, 82 line의 repo name만 변경하면 어느 프로젝트이든 손 쉽게 설정할 수 있을 것 같다.
+&nbsp;&nbsp;&nbsp;feature branch에 push 될때 dev서버에 업데이트 하기위한 github action이다. 구조를 보면 **트리거 / build 환경 / 실제 수행할 step**들이 정의되어 있다. 자세한 설명은 주석으로 추가하였다. AWS ACCESS KEY와 Github ssh key, ECR repo 이름은 Github secrets에 설정한 값을 가져오도록 하였다. Github secrets만 세팅하면 어느 프로젝트이든 손 쉽게 설정할 수 있을 것 같다.
 
 ## AWS CodePipeline과 비교
 ---
