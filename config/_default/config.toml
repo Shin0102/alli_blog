@@ -41,3 +41,11 @@ googleAnalytics = ""
   category = "categories"
   tag = "tags"
   series = "series"
+
+# for seo
+enableRobotsTXT = true
+
+# sitemap 생성
+[sitemap]
+changefreq = "weekly"
+filename = "sitemap.xml"
