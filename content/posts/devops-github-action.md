@@ -39,7 +39,7 @@ categories:
 
 ## github action
 ---
-&nbsp;&nbsp;&nbsp;**github action**이란 github에서 제공하는 CI/CD 툴이다. 사용법은 간단하다. gitub project에 Actions 탭에 들어가면 새로운 workflow를 만들 수 있다. yml 파일로 만들어지며, 생성된 파일은 프로젝트 루트에 .github/workflows/{name}.yml 위치하게 된다. 자세한 설명은 잘 정리해주신 블로거가 많으니 참고하면 될 것 같다. 일단 해야될 work을 정해보면 아래와 같다.
+&nbsp;&nbsp;&nbsp;**github action**이란 github에서 제공하는 CI/CD 툴이다. 사용법은 간단하다. gitub project에 Actions 탭에 들어가면 새로운 workflow를 만들 수 있다. yml 파일로 만들어지며, 생성된 파일은 default로 .github/workflows/{name}.yml 위치하게 된다. 자세한 설명은 잘 정리해주신 블로거가 많으니 참고하면 될 것 같다. 일단 해야될 work을 정해보면 아래와 같다.
 {{< boxmd >}}
 1. docker build
 2. AWS ECR push
@@ -47,12 +47,16 @@ categories:
 {{< /boxmd >}}
 
 
-GitOps repostroy의 Kubernetes deploymnet.yaml의 image tag에 빌드된 이미지의 태그가 업데이트 되면, GitOps repository와 연동해놓은 argocd 에서 자동(or 수동)으로 Cluster에 해당하는 Pod를 업데이트 하여 sync를 맞춘다(argocd에 대한 연동은 따로 포스팅 예정). 일단 위 작업들을 정의한 github action은 아래와 같다. 아래 github action을 수행하기전에 아래 값들을 github secrets에 세팅해줘야 한다.
+GitOps repostroy의 Kubernetes deploymnet.yaml의 image tag에 빌드된 이미지의 태그가 업데이트 되면, GitOps repository와 연동해놓은 argocd 에서 자동(or 수동)으로 Cluster에 해당하는 Pod를 업데이트 하여 sync를 맞춘다(argocd에 대한 연동은 따로 포스팅 예정). 일단 위 작업들을 정의한 github action은 아래와 같다. 아래 github action을 수행하기전에 아래 값들을 github secrets에 세팅해줘야 한다. 
+- project name : example이라 가정,
+- dev k8s resources.yaml 경로  : dev/example/resources.yaml
+- prod k8s resources.yaml 경로 : prod/example/resources.yaml
+
 {{< expand "Github Secrets" >}}
 - AWS_ACCESS_KEY_ID_VAL
 - AWS_SECRET_ACCESS_KEY_VAL
-- ECR_REPOSITORY
-- GIT_ACCESS_TOKEN
+- ECR_REPOSITORY -> AWS ECR Repository 이름
+- GIT_ACCESS_TOKEN -> gitops git repsitory를 checkout 하기위한 Token
 {{< /expand >}}
 ### 예제
 ```yml
@@ -79,7 +83,7 @@ jobs:
       run: |
         echo "Feature branch"
         echo "ENVIRONMENT=dev" >> $GITHUB_ENV
-        echo "DESTINATION=dev/{gitops path}" >> $GITHUB_ENV
+        echo "DESTINATION=dev/example" >> $GITHUB_ENV
         echo "BRANCH=feature" >> $GITHUB_ENV
     
     - name: Set Prod env variables
@@ -87,14 +91,14 @@ jobs:
       run: |
         echo "Master branch"
         echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-        echo "DESTINATION=prod/{gitops path}" >> $GITHUB_ENV
+        echo "DESTINATION=prod/example" >> $GITHUB_ENV
         echo "BRANCH=master" >> $GITHUB_ENV
     
     - name: Set commit repo msg
       env:
         GITHUB_SHA: ${{ github.sha }}
       run: |
-        echo "COMMIT_MSG=Update from {repo_url}/commit/$GITHUB_SHA" >> $GITHUB_ENV
+        echo "COMMIT_MSG=Update from https://github.com/example/$GITHUB_SHA" >> $GITHUB_ENV
         echo $COMMIT_MSG
     #
     # Push app image to ECR
@@ -132,7 +136,7 @@ jobs:
     - name: Check out k8s repo
       uses: actions/checkout@master
       with:
-        repository: {GitOps repository}
+        repository: https://github.com/your/gitops-repository
         token: ${{ secrets.GIT_ACCESS_TOKEN }}
         
     - name: chmod repo destination
@@ -152,12 +156,12 @@ jobs:
 ```
 &nbsp;&nbsp;&nbsp; 구조를 보면 **트리거 / build 환경 / 실제 수행할 step**들이 정의되어 있다. feature, master branch 에 push될때 dev와 production 서버를 업데이트 하기위한 github action이다. 라인별 설명은 아래와 같다.
 {{< boxmd >}}
-**line 24,32**  : GitOps repository에 해당 프로젝트의 kubernetes 리소스들이 있는 path를 지정해준다.(dev, prod)
-**line 39**     : GitOps에 commit할 msg 지정 -> 해당 프로젝트의 commit url link로 하기위해 repository url을 세팅해준다.
-**line 62~64**  : docker build하고 지정한 ECR에 push
+**line 19~33**  : GitOps repository에 해당 프로젝트의 kubernetes 리소스들이 있는 path를 지정해준다.(dev, prod)
+**line 39**     : GitOps에 commit할 msg 지정 -> 현재 commit의 url link를 commit msg로 하기위해 repository url을 세팅해준다.
+**line 55~64**  : docker build하고 지정한 ECR에 push
 **line 74~78**  : GitOps repository checkout
-**line 82~83**  : 실행권한 추가
-**line 90~93**  : k8s deployment가 정의된 yaml 파일의 tag를 업데이트
+**line 80~83**  : 실행권한 추가
+**line 85~93**  : k8s deployment가 정의된 yaml 파일의 tag를 업데이트
 {{< /boxmd >}}
 
 ## AWS CodePipeline과 비교
