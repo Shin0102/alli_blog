@@ -48,9 +48,10 @@ categories:
 
 
 GitOps repostroy의 Kubernetes deploymnet.yaml의 image tag에 빌드된 이미지의 태그가 업데이트 되면, GitOps repository와 연동해놓은 argocd 에서 자동(or 수동)으로 Cluster에 해당하는 Pod를 업데이트 하여 sync를 맞춘다(argocd에 대한 연동은 따로 포스팅 예정). 일단 위 작업들을 정의한 github action은 아래와 같다. 아래 github action을 수행하기전에 아래 값들을 github secrets에 세팅해줘야 한다. 
-- project name : example이라 가정,
-- dev k8s resources.yaml 경로  : dev/example/resources.yaml
-- prod k8s resources.yaml 경로 : prod/example/resources.yaml
+- project name : {{< color "#33ACFF" >}}*example*{{< /color >}} 이라 가정.
+- gitops repo에 k8s yaml이 정의되어 있어야 함.
+  - {{< color "#33ACFF" >}}*gitops_url*{{< /color >}}/dev/example/resources.yaml
+  - {{< color "#33ACFF" >}}*gitops_url*{{< /color >}}/prod/example/resources.yaml
 
 {{< expand "Github Secrets" >}}
 - AWS_ACCESS_KEY_ID_VAL
@@ -98,7 +99,7 @@ jobs:
       env:
         GITHUB_SHA: ${{ github.sha }}
       run: |
-        echo "COMMIT_MSG=Update from https://github.com/example/$GITHUB_SHA" >> $GITHUB_ENV
+        echo "COMMIT_MSG=Update from https://github.com/your/example/$GITHUB_SHA" >> $GITHUB_ENV
         echo $COMMIT_MSG
     #
     # Push app image to ECR
@@ -136,7 +137,7 @@ jobs:
     - name: Check out k8s repo
       uses: actions/checkout@master
       with:
-        repository: https://github.com/your/gitops-repository
+        repository: your/gitops-repository
         token: ${{ secrets.GIT_ACCESS_TOKEN }}
         
     - name: chmod repo destination
