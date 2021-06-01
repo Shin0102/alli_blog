@@ -47,12 +47,12 @@ categories:
 {{< /boxmd >}}
 
 
-GitOps repostroy의 Kubernetes deploymnet.yaml의 image tag에 빌드된 이미지의 태그가 업데이트 되면, GitOps repository와 연동해놓은 argocd 에서 자동(or 수동)으로 Cluster에 해당하는 Pod를 업데이트 하여 sync를 맞춘다(argocd에 대한 연동은 따로 포스팅 예정). 일단 위 작업들을 정의한 github action은 아래와 같다. 아래 github action을 수행하기전에 아래 값들을 github secrets에 세팅해줘야 한다. 
-- project name : {{< color "#33ACFF" >}}*example*{{< /color >}} 이라 가정.
-- gitops repo에 k8s yaml이 정의되어 있어야 함.
-  - {{< color "#33ACFF" >}}*gitops_url*{{< /color >}}/dev/example/resources.yaml
-  - {{< color "#33ACFF" >}}*gitops_url*{{< /color >}}/prod/example/resources.yaml
-
+GitOps repostroy의 Kubernetes deploymnet.yaml의 image tag에 빌드된 이미지의 태그가 업데이트 되면, GitOps repository와 연동해놓은 argocd 에서 자동(or 수동)으로 Cluster에 해당하는 Pod를 업데이트 하여 sync를 맞춘다. 일단 위 작업들을 정의한 github action은 아래와 같다. 
+- project name : {{< color "#33ACFF" >}}*테스트*{{< /color >}}라 가정.
+- gitops repo 아래 경로에 k8s yaml(service, deployment)이 정의되어있다고 가정.
+  - {{< color "#33ACFF" >}}*gitops repo*{{< /color >}}/dev/{{< color "#33ACFF" >}}*테스트*{{< /color >}}/resources.yaml
+  - {{< color "#33ACFF" >}}*gitops repo*{{< /color >}}/prod/{{< color "#33ACFF" >}}*테스트*{{< /color >}}/resources.yaml
+- (github action을 수행하기전에 아래 값들을 github secrets에 세팅필요)
 {{< expand "Github Secrets" >}}
 - AWS_ACCESS_KEY_ID_VAL
 - AWS_SECRET_ACCESS_KEY_VAL
@@ -84,7 +84,7 @@ jobs:
       run: |
         echo "Feature branch"
         echo "ENVIRONMENT=dev" >> $GITHUB_ENV
-        echo "DESTINATION=dev/example" >> $GITHUB_ENV
+        echo "DESTINATION=dev/테스트" >> $GITHUB_ENV
         echo "BRANCH=feature" >> $GITHUB_ENV
     
     - name: Set Prod env variables
@@ -92,14 +92,14 @@ jobs:
       run: |
         echo "Master branch"
         echo "ENVIRONMENT=prod" >> $GITHUB_ENV
-        echo "DESTINATION=prod/example" >> $GITHUB_ENV
+        echo "DESTINATION=prod/테스트" >> $GITHUB_ENV
         echo "BRANCH=master" >> $GITHUB_ENV
     
-    - name: Set commit repo msg
+    - name: Set commit msg 
       env:
         GITHUB_SHA: ${{ github.sha }}
       run: |
-        echo "COMMIT_MSG=Update from https://github.com/your/example/$GITHUB_SHA" >> $GITHUB_ENV
+        echo "COMMIT_MSG=Update from https://github.com/your/테스트/$GITHUB_SHA" >> $GITHUB_ENV
         echo $COMMIT_MSG
     #
     # Push app image to ECR
@@ -122,7 +122,7 @@ jobs:
         ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$ENVIRONMENT-$IMAGE_TAG .
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$ENVIRONMENT-$IMAGE_TAG {Dockerfile 경로}
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$ENVIRONMENT-$IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$ENVIRONMENT-$IMAGE_TAG"
         
