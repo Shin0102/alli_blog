@@ -2,6 +2,8 @@
 title: "[TIL] 쏘카 X 멋쟁이사자처럼 (AI 엔지니어 육성 부트 캠프 2기) 1주차"
 subtitle: "기본 개념 및 머신러닝의 이해"
 date: 2022-05-17
+description:
+  - "기본 개념 및 머신러닝의 이해"
 image: images/socar-ai.png
 meta_image: static/images/socar-ai.png
 tags:
@@ -10,7 +12,7 @@ tags:
   - Machine Learning
   - Deep Learning
 categories:
-  - AI
+  - 쏘카 X 멋쟁이사자처럼 AI 부트 캠프
 ---
 
 ## 1주차
@@ -20,7 +22,7 @@ categories:
 2. 머신러닝 basic
 3. 머신러닝 문제의 분류
 4. 학습방법의 분류
-5. numpy 실습
+5. (실습) numpy
 
 ### AI > Machine Learning > Deep Learning
 ---
@@ -40,6 +42,7 @@ categories:
 
 ### Machine Learning 
 ---
+
 - Training(training data) -> Test(test data) -> measure the performance
 - **Data set:**
    - traing set, validation set(모델을 선정하기위한), test set(성능을 측정하기 위한)
@@ -50,9 +53,9 @@ categories:
    - 새로운 input data가 들어오더라도 좋은 성능을 내는 모델을 학습
    - underfitting(high bias) -> optimization, more complex model
    - overfitting(high variance) -> regularization, more data
-   - 적절한 Trade off 가 필요함
+   - 적절한 bias-variance Trade off 가 필요함
    {{< box >}}
-   {{< img src="/images/bias-variance.png" title="출처 http://scott.fortmann-roe.com" width="350px" position="center" >}}
+   {{< img src="/images/bias-variance.png" caption="출처 http://scott.fortmann-roe.com" width="350px" position="center" >}}
    {{< /box >}}
 >
 - **ML 문제(task)의 분류:**
@@ -66,5 +69,3 @@ categories:
    - Reinforcement Learning: observation하고 action에 대해 reward값을 알려줌으로써 학습
    - Semi-supervised Learning
    - Self-supervised Learning
-
-
