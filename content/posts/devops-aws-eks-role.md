@@ -17,7 +17,7 @@ categories:
 ---
 
 ---
-&nbsp;&nbsp;&nbsp;MSA(microservice architectur)를 위해 CDK(typescript)를 통해 EKS를 구성한 적이 있는데, 이때는 동작에만 집중하다 보니, 자동으로 생성되는 리소스나 Role들에 대해 크게 신경 쓰지 않았다. 그러다 이번에 번잡하게 관리되는 AWS Resource들에 대해 정리할 기회가 생겨, 새로 EKS 환경을 구성할 기회가 생겼다. 그중에 이번에는 Role에 대해 정리해보려 한다. 
+&nbsp;&nbsp;&nbsp;MSA(microservice architecture)를 위해 CDK(typescript)를 통해 EKS를 구성한 적이 있는데, 이때는 동작에만 집중하다 보니, 자동으로 생성되는 리소스나 Role들에 대해 크게 신경 쓰지 않았다. 그러다 이번에 번잡하게 관리되는 AWS Resource들에 대해 정리할 기회가 생겨, 새로 EKS 환경을 구성할 기회가 생겼다. 그중에 이번에는 Role에 대해 정리해보려 한다. 
 
 --- 
 &nbsp;&nbsp;&nbsp;CDK를 통해 eks를 생성하게 되면 role에 대해 특별히 명시하지 않아도, 자동으로 IAM Role들이 몇 개 만들어진다. Cluster에 대한 Role, 그리고 같이 생성되는 Lambda에 대한 Role도 여러 개 있다.(Lambda 관련된 것들은 다음에 정리해봐야겠다) 먼저 Cluster 관련 Role을 정리해 보면 아래와 같다.
