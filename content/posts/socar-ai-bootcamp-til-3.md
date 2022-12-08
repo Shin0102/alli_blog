@@ -51,20 +51,20 @@ categories:
 - **Curse of dimensionality**: 데이터가 고차원일수록,같은 성능의 모델 학습을 위해 많은 데이터가 필요
 - 불필요하게 중복되는 변수나 의미없는 변수를 줄이자
 
-1. PCA(Principal Compo): 데이터 variance를 보존하면서 차원축소
+  1. PCA(Principal Compo): 데이터 variance를 보존하면서 차원축소
 
-   - 데이터의 분산을 가장 잘 설명해주는 축을 찾는다.
-   - projection 이후 variance를 최대화하는 축 → Convariance matrix? 를 최대로하는
-   - PVE?
-   - ㄴ Scree plot에서 “elobw point”를 찾거나, 미리 정한 크기의 분산을 설명하는 가장 작은 components를 사용
-   - 한계점: classificaion에 도움이 되지않을 수 있다.(variance에 초점을 맞추기때문)
+     - 데이터의 분산을 가장 잘 설명해주는 축을 찾는다.
+     - projection 이후 variance를 최대화하는 축 → Convariance matrix? 를 최대로하는
+     - PVE?
+     - ㄴ Scree plot에서 “elobw point”를 찾거나, 미리 정한 크기의 분산을 설명하는 가장 작은 components를 사용
+     - 한계점: classificaion에 도움이 되지않을 수 있다.(variance에 초점을 맞추기때문)
 
-2. MDS: 데이터간의 거리를 보존하면서 차원축소
-3. t-SNE: local neighborhood 정보를 보존하면서 차원축소, 차원에서 멀리 떨어져있는 데이터는 신경을 별로 쓰지않고 가까이 있는 데이터들이 차원축소 후에도 가까워져 있기를 기대한다.
+  2. MDS: 데이터간의 거리를 보존하면서 차원축소
+  3. t-SNE: local neighborhood 정보를 보존하면서 차원축소, 차원에서 멀리 떨어져있는 데이터는 신경을 별로 쓰지않고 가까이 있는 데이터들이 차원축소 후에도 가까워져 있기를 기대한다.
 
-   - 데이터가 주어졌을때 neighbor일 확률은 gaussian 분포를 따른다.
+     - 데이터가 주어졌을때 neighbor일 확률은 gaussian 분포를 따른다.
 
-4. Auto-encoder, Word2Vec: 딥러닝 기반의 차원 축소
+  4. Auto-encoder, Word2Vec: 딥러닝 기반의 차원 축소
 
 ## Clustering
 
