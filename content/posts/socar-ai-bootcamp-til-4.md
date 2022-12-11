@@ -1,9 +1,9 @@
 ---
 title: "Multi-Layer Perceptron"
-subtitle: "인공신경망, 그게 대체 뭐죠?"
+subtitle: "[TIL] 쏘카 X 멋쟁이사자처럼 (AI 엔지니어 육성 부트 캠프 2기) 4주차"
 date: 2022-05-31
 description:
-  - "Multi-Layer Perceptron"
+  - "인공신경망, 그게 대체 뭐죠?"
 image: images/socar-ai.png
 meta_image: static/images/socar-ai.png
 tags:
