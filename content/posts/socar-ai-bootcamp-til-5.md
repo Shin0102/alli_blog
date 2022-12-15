@@ -9,7 +9,7 @@ meta_image: static/images/socar-ai.png
 tags:
   - TIL
   - AI
-  - Backward PAss
+  - Backward Pass
   - Optimizer
   - Batch Normalization
 categories:
