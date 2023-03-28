@@ -4,8 +4,8 @@ subtitle: ""
 date: 2023-02-01
 description:
   - ""
-image: images/retrospect-2023/2023.jpg
-meta_image: static/images/retrospect-2023/2023.jpg
+image: images/retrospect-2022/2022.jpg
+meta_image: static/images/retrospect-2022/2022.jpg
 tags:
   - 2022 회고
 categories:
