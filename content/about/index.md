@@ -20,6 +20,6 @@ Migration legacy services to microservices
 
 Full stack Developer(Learning React)
 Deep dive devops
-Golang
+Rust
 
 </center>
