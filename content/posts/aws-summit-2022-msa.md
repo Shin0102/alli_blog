@@ -48,7 +48,7 @@ categories:
 ---
 
 {{< img src="images/aws-summit-2022/msa-case4.png" title="구매내역 조회 서비스" caption="DynamoDB" position="center" width="500px" >}}
-&nbsp;&nbsp;&nbsp;네번째 Case는 첫번째 Case와 거의 동일하므로 따로 정리하지 않았다. 데이터 형태에 따라 적절한 DB를 선택하는 의사결정이 중요하다는 것을 강조하였다.
+&nbsp;&nbsp;&nbsp;네번째 Case는 첫번째 Case와 거의 동일하므로 따로 정리하지 않았다. 데이터 형태에 따라 적절한 DB를 선택하는 의사결정이 중요하다는 것을 강조하였다. 예제에는 DynamoDB 예제가 나왔는데, DynamoDB는 DocumentDB와 다르게 Serverless 이며 서버 인스턴스를 관리할 필요없이 사용한만큼 지불하며, IAM을 통해 접속을한다. 데이터를 Primary key로 접근을 해야되기 때문에 쿼리가 DocumentDB 에 비해 제한 된다. GSI(Global Secondary Index)를 통해 별도의 key를 가진 인덱스 테이블 공간을 생성하여 쿼리 할수 있지만, 20개로 개수가 제한되며 비용도 증가한다. DocumentDB 보다는 좀 더 목적이 명확한 경우 사용하면 좋을거 같다는 생각을 했다.
 
 ## 마치며
 

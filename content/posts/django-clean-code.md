@@ -54,7 +54,7 @@ categories:
 
 ---
 
-&nbsp;&nbsp;&nbsp;위 정리한 내용을 토대로 백엔드 팀에서 활용할만한 snippet을 작성해보았다. 해당 snippet을 보면 API View만 보아도 한눈에 Flow **(view → serializer → selector or service → model(manager or property))**를 파악할 수 있다는 장점이 있다. view 에서는 사용할 selector 나 service를 import 하여 사용하면 된다. selector나 service의 특징에 따라 추상화하여 인터페이스를 정의하면 더욱 가독성 좋은 코드를 만들 수 있다. 
+&nbsp;&nbsp;&nbsp;위 정리한 내용을 토대로 백엔드 팀에서 활용할만한 snippet을 작성해보았다. 해당 snippet을 보면 API View만 보아도 한눈에 Flow **(view → serializer → selector or service → model(manager or property))** 를 파악할 수 있다는 장점이 있다. view 에서는 사용할 selector 나 service를 import 하여 사용하면 된다. selector나 service의 특징에 따라 추상화하여 인터페이스를 정의하면 더욱 가독성 좋은 코드를 만들 수 있다. 
 ```python
   class {Entitiy}{Action}API(views.APIView):
       """
