@@ -13,12 +13,13 @@ image: /images/whoami/avatar.png
 ## Experience
 
 Python(Django, FastAPI, Flask) Backend Developer
-AWS, EKS, Serverless Devops
+AWS Devops
 Migration legacy services to microservices
+Launch of new service with full stack
 
 ## Interst
 
-Full stack Developer(Learning React)
+Full stack Developer(Learning react, flutter)
 Deep dive devops
 Rust
 

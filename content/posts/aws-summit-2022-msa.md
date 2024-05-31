@@ -3,7 +3,7 @@ title: "일체형 데이터베이스, 목적에 맞게 MSA 구조로 전환하�
 subtitle: "일체형 데이터베이스, 목적에 맞게 MSA 구조로 전환하기"
 date: 2023-05-01
 description:
-  - ""
+  - "MSA"
 image: images/aws-summit-2022/aws-summit-2022.png
 meta_image: static/images/aws-summit-2022/aws-summit-2022.png
 tags:
@@ -27,7 +27,7 @@ categories:
 ---
 
 {{< img src="images/aws-summit-2022/msa-case1.png" title="고객 CRM 시스템 분리" caption="NoSQL" position="center" width="500px" >}}
-&nbsp;&nbsp;&nbsp;첫번째 CASE는 현재 고민중이기도 한 내용이었다. 현재 Django를 활용해서 백오피스를 운영중인데 많은 정보를 제공해줘야 하다보니 Table join이 늘어나고, 코드 또한 쿼리 최적화를 위한 ORM 코드를 작성해야 되기때문에 가독성 또한 많이 나빠졌다. 이러한 상황을 해결하기 위해서 영상에서는 DMS를 활용하여 RDB 에서 NoSQL(Document Data)로 마이그레이션 하였다. 이 과정을 통해서 Table join 과정을 줄이고 코드 또한 간단하게 수정하는 예제를 소개하고 있다. 코드를 리팩토링하는 것이 아닌 DB를 변경하는 것으로도 코드를 간단하게 만드는 관점은 굉장히 흥미로웠다.
+&nbsp;&nbsp;&nbsp;첫번째 CASE는 현재 고민중이기도 한 내용이었다. 현재 Django를 활용해서 백오피스를 운영중인데 많은 정보를 제공해줘야 하다보니 Table join이 늘어나고, 코드 또한 쿼리 최적화를 위한 ORM 코드를 작성해야 되기때문에 가독성 또한 많이 나빠졌다. 이러한 상황을 해결하기 위해서 영상에서는 DMS를 활용하여 RDB 에서 NoSQL(DocumentDB)로 마이그레이션 하는 예제였다. 이 과정을 통해서 Table join 과정을 줄이고 코드 또한 간단하게 수정하는 예제를 소개하고 있다. 코드를 리팩토링하는 것이 아닌 DB를 새로 구성하는 것으로도 코드를 간단하게 만드는 관점은 굉장히 흥미로웠다.
 
 ## CASE2. 리더보드(실시간) 구성
 
@@ -48,7 +48,7 @@ categories:
 ---
 
 {{< img src="images/aws-summit-2022/msa-case4.png" title="구매내역 조회 서비스" caption="DynamoDB" position="center" width="500px" >}}
-&nbsp;&nbsp;&nbsp;네번째 Case는 첫번째 Case와 거의 동일하므로 따로 정리하지 않았다. 데이터 형태에 따라 적절한 DB를 선택하는 의사결정이 중요하다는 것을 강조하였다. 예제에는 DynamoDB 예제가 나왔는데, DynamoDB는 DocumentDB와 다르게 Serverless 이며 서버 인스턴스를 관리할 필요없이 사용한만큼 지불하며, IAM을 통해 접속을한다. 데이터를 Primary key로 접근을 해야되기 때문에 쿼리가 DocumentDB 에 비해 제한 된다. GSI(Global Secondary Index)를 통해 별도의 key를 가진 인덱스 테이블 공간을 생성하여 쿼리 할수 있지만, 20개로 개수가 제한되며 비용도 증가한다. DocumentDB 보다는 좀 더 목적이 명확한 경우 사용하면 좋을거 같다는 생각을 했다.
+&nbsp;&nbsp;&nbsp;네번째 Case는 첫번째 Case와 거의 동일하므로 따로 정리하지 않았다. 데이터 형태에 따라 적절한 DB를 선택하는 의사결정이 중요하다는 것을 강조하였다. 예제에는 DynamoDB 예제가 나왔는데, DynamoDB는 DocumentDB와 다르게 Serverless 이며 서버 인스턴스를 관리할 필요없이 사용한만큼 지불하며, IAM을 통해 접속을한다. 데이터 filter시 Primary index key로 접근을 해야되기 때문에 쿼리가 DocumentDB 에 비해 제한 된다. GSI(Global Secondary Index)나 LSI(Local Secondary Index)를 통해 별도의 key를 가진 인덱스를 생성하여 쿼리 할수 있지만, 각각 20개, 5개로 개수가 제한되며 비용도 증가한다. 이러한 점 때문에 DocumentDB 보다는 좀 더 목적이 명확한 경우 사용하면 좋을거 같다는 생각을 했다. 
 
 ## 마치며
 
