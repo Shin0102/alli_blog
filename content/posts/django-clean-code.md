@@ -19,14 +19,21 @@ categories:
 
 ---
 
-&nbsp;&nbsp;&nbsp;django로 개발하게 된지도 어느덧 5년여 되어가는 것 같다.  보통 django 와 django rest framework(DRF)을 같이 사용하여 rest api 서버를 구성하는 경우가 많았다. 여러 프로젝트를 거치며 다양한 스타일의 django 프로젝트를 경험하였다.  추상화 수준이 낮은 function based view 로 구현하는 방식부터 DRF GenericViewSet을 활용하여 구현 코드를 최소화 하는 방식 등등 상황에 따라 구현방식을 적절히 선택해왔던 것 같다. 하지만 서비스가 커짐에 따라 비즈니스 로직들이 복잡해지게 되면서, 코드의 복잡성이 높아지고 유지보수가 어려워지는 경우가 발생하게 된다.  
+&nbsp;&nbsp;&nbsp;django를 사용하게 되면 보통 django rest framework(이하 drf)을 같이 사용하여 rest api 서버를 구성하는 경우가 많다. 여러 프로젝트를 거치며 다양한 스타일의 django 코드를 경험하였다. 추상화 수준이 낮은 function based view 로 구현하는 방식부터 DRF GenericViewSet을 활용하여 구현 코드를 최소화 하는 방식 등등 상황에 따라 구현방식을 적절히 선택해왔던 것 같다. 하지만 공통적으로 서비스가 커짐에 따라 비즈니스 로직들이 복잡해지게 되면서, 코드의 복잡성이 높아지고 유지보수가 어려워지는 경우가 많이 발생하게 된다.  
+
+## django orm
+
+---
+
+&nbsp;&nbsp;&nbsp;계속...
+
 
 
 ## django style guide
 
 ---
 
-&nbsp;&nbsp;&nbsp;이번 회사에 온보딩을 하면서 코드를 이해하는데 어려움을 느꼈는데, 먼저 핀테크에 대한 경험이 부족하다보니 관련 용어나 플로우에 대해 익숙치 않았던 점도 있지만, 코드컨벤션 없이 비즈니스 로직들이 파편화 되어 있어 코드파악이 어려웠다. model, serializer, view등 여러곳에 비즈니스 로직들이 구현되어있었고 재사용이 어려웠다. 특히나 django, drf의 높은 추상화 수준의 클래스를 상속받아 그의도와 다르게 메소드를 오버라이드 하는경우도 있어 더욱 파악이 어려웠다. 그래서 백엔드 팀의 코드컨벤션이 절실했고 이를 위해 팀 내 **‘django convention’** 문서를 작성하였다.
+&nbsp;&nbsp;&nbsp;이번 회사에 온보딩을 하면서 코드를 이해하는데 어려움을 느꼈는데, 먼저 핀테크에 대한 경험이 부족하다보니 관련 용어나 플로우에 대해 익숙치 않았던 점도 있지만, 코드컨벤션 없이 비즈니스 로직들이 파편화 되어 있어 코드파악이 어려웠다. model, serializer, view등 여러곳에 비즈니스 로직들이 구현되어있었고 재사용이 어려웠다. 특히나 django, drf의 높은 추상화 수준의 클래스를 상속받아 그 의도와 다르게 메소드를 오버라이드 하는경우도 있어 더욱 파악이 어려웠다. 그래서 백엔드 팀의 코드컨벤션이 절실했고 이를 위해 팀 내 **‘django convention’** 문서를 작성하였다.
 
 **django style guide**: <a href="https://github.com/HackSoftware/Django-Styleguide" target="_blank">링크</a>
 
@@ -48,6 +55,9 @@ categories:
 - API & Serializer는 심플하게 유지
 - Input Serializer 와 Output Serializer를 통해 data in/out 관리
 - Custom Exception, logging으로 에러처리에 대한 관심사 분리
+
+### DDD?
+&nbsp;&nbsp;&nbsp;계속...
 
 
 ## code snippet
