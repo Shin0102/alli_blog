@@ -19,25 +19,21 @@ categories:
 
 ---
 
-&nbsp;&nbsp;&nbsp;django를 사용하게 되면 보통 django rest framework(이하 drf)을 같이 사용하여 rest api 서버를 구성하는 경우가 많다. 여러 프로젝트를 거치며 다양한 스타일의 django 코드를 경험하였다. 추상화 수준이 낮은 function based view 로 구현하는 방식부터 DRF GenericViewSet을 활용하여 구현 코드를 최소화 하는 방식 등등 상황에 따라 구현방식을 적절히 선택해왔던 것 같다. 하지만 공통적으로 서비스가 커짐에 따라 비즈니스 로직들이 복잡해지게 되면서, 코드의 복잡성이 높아지고 유지보수가 어려워지는 경우가 많이 발생하게 된다.  
+&nbsp;&nbsp;&nbsp;django를 사용하게 되면 보통 django rest framework(이하 drf)를 같이 사용하여 rest api 서버를 구성하는 경우가 많다. 여러 프로젝트를 거치며 다양한 스타일의 django 코드를 경험하였는데, 추상화 수준이 낮은 function based view 로 구현하는 방식부터 DRF GenericViewSet을 활용하여 구현 코드를 최소화 하는 방식 등등 상황에 따라 구현방식을 적절히 선택해왔던 것 같다. 하지만 공통적으로 서비스가 커짐에 따라 비즈니스 로직들이 복잡해지게 되면서, 코드의 복잡성이 높아지고 유지보수가 어려워지는 경우가 많이 발생하게 된다.  
 
-## django orm
-
----
-
-&nbsp;&nbsp;&nbsp;계속...
-
+### django orm
+&nbsp;&nbsp;&nbsp;django의 orm은 model과 DB가 직접 연결되어있는 Active Record 패턴이다. 이를 통해 SQL문을 직접 작성하지 않고 모델의 메서드로 DB 쿼리를 실행할 수 있다. 이는 단순한 CRUD 작업에는 매우 효율적이지만, 도메인이 복잡해지면 여러개의 테이블을 연결하여 사용하는 경우가 많아지게 되는데, 이때 코드는 걷잡을 수 없이 복잡해지게 된다. 또한 N+1 문제를 발생시키기 쉬운 코드를 작성하게 된다.
 
 
 ## django style guide
 
 ---
 
-&nbsp;&nbsp;&nbsp;이번 회사에 온보딩을 하면서 코드를 이해하는데 어려움을 느꼈는데, 먼저 핀테크에 대한 경험이 부족하다보니 관련 용어나 플로우에 대해 익숙치 않았던 점도 있지만, 코드컨벤션 없이 비즈니스 로직들이 파편화 되어 있어 코드파악이 어려웠다. model, serializer, view등 여러곳에 비즈니스 로직들이 구현되어있었고 재사용이 어려웠다. 특히나 django, drf의 높은 추상화 수준의 클래스를 상속받아 그 의도와 다르게 메소드를 오버라이드 하는경우도 있어 더욱 파악이 어려웠다. 그래서 백엔드 팀의 코드컨벤션이 절실했고 이를 위해 팀 내 **‘django convention’** 문서를 작성하였다.
+&nbsp;&nbsp;&nbsp;이번 회사에 온보딩을 하면서 코드를 이해하는데 어려움을 느꼈는데, 먼저 핀테크에 대한 경험이 부족하다보니 관련 용어나 플로우에 대해 익숙치 않았던 점도 있지만, 코드컨벤션 없이 비즈니스 로직들이 파편화 되어 있어 코드파악이 어려웠다. model, serializer, view등 여러곳에 비즈니스 로직들이 구현되어있었고 재사용이 어려웠다. 특히나 django, drf의 높은 추상화 수준의 클래스를 상속받아 그 의도와 다르게 메소드를 오버라이드 하는경우도 있어 더욱 파악이 어려웠다. 그래서 백엔드 팀의 코드컨벤션이 절실했고 이를 위해 팀 내 **'django convention'** 문서를 작성하였다.
 
 **django style guide**: <a href="https://github.com/HackSoftware/Django-Styleguide" target="_blank">링크</a>
 
-&nbsp;&nbsp;&nbsp;전체적인 컨셉은 위링크 **django style guide**를 참고하였다. django project를 진행하면서 고민했던 내용들이 정리되어 있었고 그에 대한 해결책을 제시해주고 있다. 주요 내용을 정리하면 아래와 같다.
+&nbsp;&nbsp;&nbsp;전체적인 컨셉은 위링크 **django style guide**를 참고하였다. django project들을 진행하면서 고민했던 내용들이 정리되어 있었고 그에 대한 해결책을 제시해주고 있다. 주요 내용을 정리하면 아래와 같다.
 
 - Service(Selector) layer를 추가하여, 비즈니스 로직을 작성
     - 실제 서비스는 단순히 하나의 model 과 1:1 매핑되지 않기 때문에 이를 어떤 위치에 두어야 하는지 명확하지 않다.
@@ -46,7 +42,7 @@ categories:
     - APIs and Views.
     - Serializers and Forms.
     - Form tags.
-    - Model `save` method.
+    - Model `save` method.
     - Custom managers or querysets.
     - Signals.
 - model property에 많은 relation 로직을 넣게 되면(fat model)  이는 N+1 문제를 발생시킬 수 있다.
@@ -55,9 +51,6 @@ categories:
 - API & Serializer는 심플하게 유지
 - Input Serializer 와 Output Serializer를 통해 data in/out 관리
 - Custom Exception, logging으로 에러처리에 대한 관심사 분리
-
-### DDD?
-&nbsp;&nbsp;&nbsp;계속...
 
 
 ## code snippet
@@ -108,7 +101,7 @@ categories:
       
       def post(self, request): # or def get(self, request)
           input_serializer = self.InputSerializer(data=request.data)
-          input_serializer.is_valid(raise_exception=True)
+         input_serializer.is_valid(raise_exception=True)
           
           # your service, selector logic Class or function
           service = ExampleService(request.user)
@@ -134,6 +127,14 @@ categories:
       "error_detail": "에러 메시지에 대한 내용",
   }
 ```
+
+## 모든문제가 해결되었나?
+
+---
+
+&nbsp;&nbsp;&nbsp;사실 컨벤션 도입으로 코드의 가독성, 유지보수성은 크게 좋아졌지만 여전히 문제들은 남아있다. Service(Selector) layer 로직들이 특정 기능들에 특화되다 보니 이를 재사용하기가 어려워지고 중복코드가 발생하거나 layer 안에서 의존성이 생기는 문제가 발생하였다. 그래서 Service(Selector) layer에서 자주 사용하는 기능은 모듈화 + 최적화를 진행하여 최대한 재사용성이 좋게 하였고, 너무 복잡하거나 성능이 중요한 부분은 무리해서 ORM을 사용하지 않고 Raw Query를 허용하여 유연하게 대처하였다.  
+
+&nbsp;&nbsp;&nbsp;추가적으로 DDD를 도입하여 [Repository and Unit of Work Patterns](https://www.cosmicpython.com/book/appendix_django.html)를 도입하는것도 고려해보았는데(도메인 layer와 영속성(Persistent) layer의 완전한 분리를 위해), 현재 운영중인 django project에 적용하기에는 너무 공수가 컸고, 새로운 Pattern을 익히는데에도 러닝커브가 클거 같아 일단은 보류하였다. 추후에 EDA 기반의 MSA 형태로 서비스를 고도화하는게 오히려 좋지않을까?라는 생각이 들기도 하였다.
 
 
 ## 마치며
