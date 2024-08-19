@@ -134,7 +134,7 @@ categories:
 
 &nbsp;&nbsp;&nbsp;사실 컨벤션 도입으로 코드의 가독성, 유지보수성은 크게 좋아졌지만 여전히 문제들은 남아있다. Service(Selector) layer 로직들이 특정 기능들에 특화되다 보니 이를 재사용하기가 어려워지고 중복코드가 발생하거나 layer 안에서 의존성이 생기는 문제가 발생하였다. 그래서 Service(Selector) layer에서 자주 사용하는 기능은 모듈화 + 최적화를 진행하여 최대한 재사용성이 좋게 하였고, 너무 복잡하거나 성능이 중요한 부분은 무리해서 ORM을 사용하지 않고 Raw Query를 허용하여 유연하게 대처하였다.  
 
-&nbsp;&nbsp;&nbsp;추가적으로 DDD를 도입하여 [Repository and Unit of Work Patterns](https://www.cosmicpython.com/book/appendix_django.html)를 도입하는것도 고려해보았는데(도메인 layer와 영속성(Persistent) layer의 완전한 분리를 위해), 현재 운영중인 django project에 적용하기에는 너무 공수가 컸고, 새로운 Pattern을 익히는데에도 러닝커브가 클거 같아 일단은 보류하였다. 추후에 EDA 기반의 MSA 형태로 서비스를 고도화하는게 오히려 좋지않을까?라는 생각이 들기도 하였다.
+&nbsp;&nbsp;&nbsp;추가적으로 DDD를 도입하여 [Repository and Unit of Work Patterns](https://www.cosmicpython.com/book/appendix_django.html)를 도입하는것도 고려해보았는데(도메인 layer와 영속성(Persistent) layer의 완전한 분리를 위해), 현재 운영중인 django project에 적용하기에는 너무 공수가 컸고, 새로운 Pattern을 익히는데에도 러닝커브가 클거 같아 일단은 보류하였다. 추후에 DDD EventStorming 이후에 컴포넌트 분리가 어느정도 정리되는대로 진행해볼 예정이다.
 
 
 ## 마치며
