@@ -1,7 +1,7 @@
 ---
 title: About
 date: 2020-12-05
-description: Alli about page
+description: About me
 type: about
 image: /images/whoami/avatar.png
 ---
