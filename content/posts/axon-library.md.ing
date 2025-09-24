@@ -1,0 +1,637 @@
+---
+title: "Axon Framework 알아보기"
+subtitle: "Axon 라이브러리 정리 및 주요 개념"
+date: 2025-04-11
+description:
+  - "Event Sourcing과 CQRS를 구현하기 위한 Axon Framework의 핵심 기능과 사용법을 정리합니다."
+image: images/axon-library/axon-framework.png
+meta_image: images/axon-library/axon-framework.png
+tags:
+  - axon
+  - event sourcing
+  - cqrs
+  - microservices
+  - java
+  - kotlin
+categories:
+  - msa
+---
+
+## 들어가며
+
+---
+
+&nbsp;&nbsp;&nbsp;최근 Event Sourcing과 CQRS 패턴에 대해 학습하게 되면서 Axon Framework를 접하게 되었다. 복잡한 비즈니스 로직과 데이터 일관성 문제를 해결하고, 확장 가능한 마이크로서비스 아키텍처를 구현하는데 도움이 되는 Java/Kotlin 기반 프레임워크다. 이 글에서는 Axon Framework의 주요 라이브러리 사용법과 핵심 개념들을 정리해보려 한다.
+
+## Axon Server
+
+---
+
+&nbsp;&nbsp;&nbsp;Axon Server는 이벤트 스토어와 메시지 라우팅을 담당하는 핵심 컴포넌트다.
+
+### 배포 전략
+
+&nbsp;&nbsp;&nbsp;EC2 인스턴스 수동 세팅 방식을 채택했다.
+
+- 파일 기반으로 이벤트나 데이터를 저장하기 때문에 persist volume(EBS) 세팅이 필요하다
+- ECS 노드 인스턴스에 EBS를 직접 연결할 수 없다
+- 스케일링 의미가 제한적이다 - 파일 기반 stateful 서버이기 때문에 EFS나 NFS 등 네트워크 공유 파일시스템 사용 시 성능이 EBS 대비 느리다
+- 클러스터링 구성 시: 3개의 EC2 인스턴스 + 3개의 EBS로 구성 (Axon Server 자체적으로 데이터 파일 레플리케이션 수행)
+
+### 사용 포트
+
+- 8024: Axon Server Management UI 접속을 위한 HTTP 포트
+- 8124: Axon Framework(클라이언트)와 Axon Server 간 gRPC 통신 포트
+- 8224: Axon Server 클러스터링 시 서버 간 gRPC 통신 포트
+
+## Messaging Concepts
+
+---
+
+&nbsp;&nbsp;&nbsp;Axon의 Command, Event, Query는 모두 Message 인터페이스를 사용한다.
+
+### Message 구조
+
+```
+Message<T>
+├── payload: T
+├── payloadType: Class<T>
+├── metaData: MetaData → Immutable
+├── identifier: String (UUID)
+```
+
+### MetaData 활용
+
+MetaData는 traceId, correlationId 삽입, security context 등에 활용된다.
+
+```kotlin
+originalMessage.withMetaData(mapOf("key" to "value"))  // 대체
+originalMessage.andMetaData(mapOf("key" to "value"))  // 추가
+```
+
+### Message Correlation
+
+서로 다른 메시지(Command, Event, Query) 간의 관계를 추적하기 위한 메커니즘이다.
+
+- Axon에서 기본적으로 Command 생성 시 Metadata에 traceId와 CorrelationId 부여
+- 같은 UnitOfWork 내에서 전파됨
+- `slf4j` MDC와 연동하여 Flow 추적 가능
+
+### Message Intercepting
+
+메시지 처리 직전/직후 실행되는 기능으로 두 가지 타입이 있다:
+
+- dispatch: 메시지가 message handler에 invoke되기 전
+- handler: 메시지가 message handler에 invoke된 후
+
+#### 활용 사례
+
+| 구분 | 설명 |
+|---------|---------|
+| 💬 로깅/모니터링 | 메시지 흐름 로깅, 이벤트 시각화 |
+| 🧠 유효성 검사 | 커맨드/이벤트 유효성 사전 체크 |
+| 🔒 보안 필터링 | 사용자 인증, 권한 검증 |
+| 🧭 트레이싱 | MDC / Sleuth / OpenTelemetry 연동 |
+| 🔄 메타데이터 삽입 | 메시지에 공통 정보 자동 삽입 |
+| 🧪 테스트/Mock 라우팅 | 테스트 환경에서 메시지 필터링, 우회 처리 |
+| 💥 에러 조작 | 예외 변환, 장애 전파 통제 |
+
+메시지 처리 중 에러 핸들링의 경우 ExceptionHandler를 등록하여 다음과 같이 처리할 수 있다:
+
+- Command 실패 시 유저 Response
+- 롤백 여부 제어
+- DLQ 사용
+- 무시 및 단순 로깅
+
+### UoW(Unit of Work)
+
+Axon 메시지를 처리하는 동안의 전체 실행 컨텍스트이자, 트랜잭션 경계선 역할을 수행한다.
+
+#### UoW 상태 흐름
+
+```
+    ┌──────────────┐
+    │    STARTED   │
+    └──────┬───────┘
+           ↓
+    ┌──────────────┐
+    │ PREPARE_COMMIT│
+    └──────┬───────┘
+           ↓
+    ┌──────────────┐
+    │    COMMIT    │──┐
+    └──────┬───────┘  │
+           ↓          │
+    ┌──────────────┐  │
+    │ AFTER_COMMIT │  │
+    └──────┬───────┘  │
+           ↓          │
+    ┌──────────────┐  │
+    │   CLEANUP    │  │
+    └──────┬───────┘  │
+           ↓          ↓
+        ┌──────┐   ┌──────┐
+        │CLOSED│   │ROLLED│
+        └──────┘   └──────┘
+```
+
+#### Event Processor별 UoW 컨텍스트 범위
+
+Subscribing Processor
+```
+Command Gateway
+   ↓
+@CommandHandler → apply(event)
+   ↓
+Subscribing Event Handler
+   ↓
+Projection (DB write)
+   ↓
+UoW commit
+
+📌 Projection 실패 → 전체 롤백
+```
+
+Tracking Processor
+```
+Command Gateway
+   ↓
+@CommandHandler → apply(event)
+   ↓
+UoW A → COMMIT 완료 (Event 저장 완료)
+
+=== 이후 ===
+
+TrackingEventProcessor 스레드
+   ↓
+@EventHandler 실행 → UoW B
+   ↓
+Projection
+   ↓
+UoW B commit
+
+📌 Projection 실패 → UoW B만 rollback, 이벤트 재시도
+```
+
+#### 활용 예제
+
+afterCommit 활용
+```kotlin
+@CommandHandler
+fun handle(cmd: RegisterUserCommand, unitOfWork: UnitOfWork<*>) {
+    AggregateLifecycle.apply(UserRegisteredEvent(...))
+
+    unitOfWork.afterCommit {
+        // 메일 발송 트리거
+        notificationService.sendWelcomeMail(cmd.email)
+    }
+}
+```
+
+UoW를 활용하여 리소스 공유도 가능하다.
+
+### Timeouts
+
+Axon에서 메시지를 전송했을 때, 응답이 지정된 시간 내에 도착하지 않으면 실패로 간주하는 기능이다.
+
+- Spring Boot에서 기본값: 10초(로그 warning), 30초(timeout)
+
+## Command
+
+---
+
+### Dispatchers
+
+Command를 전송하는 두 가지 방법이 있다:
+
+- CommandBus: low level에서 커스터마이징
+- CommandGateway: high level, 대부분의 일반적인 경우 사용
+
+#### CommandGateway 주요 메서드
+
+- `send`: 비동기 전송
+- `sendAll`: 여러 커맨드 일괄 전송
+- `sendAndWait`: 동기 전송
+- config를 통한 커스터마이징 가능
+
+```kotlin
+@Bean
+fun commandGateway(commandBus: CommandBus): CommandGateway {
+    return DefaultCommandGateway.builder()
+        .commandBus(commandBus)
+        .retryScheduler(IntervalRetryScheduler())
+        .build()
+}
+```
+
+### Aggregate
+
+도메인에서 유사한 entity와 value objects의 집합으로, 일관성 유지 및 도메인 로직을 캡슐화한다.
+
+#### Lifecycle Operations
+
+- apply: aggregate의 상태를 업데이트
+- markDeleted: aggregate 인스턴스 삭제 처리 (DB 삭제 X)
+- createNew: 새로운 aggregate 생성 (saga나 다른 Aggregate 생성 시)
+- isLive: 현재 aggregate가 replay 중인지 live 상태인지 (side effect가 있는 경우 활용)
+
+#### Multi-Entity Aggregate
+
+Aggregate 안의 여러 Entity를 포함하는 경우다.
+
+- 기본적으로 필드명으로 메시지 라우팅 가능
+- 하위 엔티티 자체적으로 @CommandHandler를 가질 수 있어 Aggregate의 명령 처리 분담 가능
+
+```kotlin
+@Aggregate
+class GiftCardAggregate() {
+
+    @AggregateIdentifier
+    lateinit var cardId: String
+
+    var balance: Int = 0
+
+    @AggregateMember
+    var transactions: MutableList<GiftCardTransaction> = mutableListOf()
+    
+    // ... 생략
+}
+
+class GiftCardTransaction() {
+
+    @EntityId
+    lateinit var transactionId: String
+    var amount: Int = 0
+    var reimbursed: Boolean = false
+
+    constructor(transactionId: String, amount: Int) : this() {
+        this.transactionId = transactionId
+        this.amount = amount
+    }
+
+    @CommandHandler
+    fun handle(cmd: ReimburseTransactionCommand) {
+        if (reimbursed) throw IllegalStateException("Already reimbursed")
+        AggregateLifecycle.apply(GiftCardTransactionReimbursedEvent(cmd.cardId, transactionId))
+    }
+
+    @EventSourcingHandler
+    fun on(event: GiftCardTransactionReimbursedEvent) {
+        reimbursed = true
+    }
+}
+```
+
+#### State-Stored Aggregate
+
+Event Sourcing의 이점이 적거나 변경이 적은 도메인의 경우 사용한다.
+
+- DB에 현재 상태를 그대로 저장하고 사용
+
+```kotlin
+import jakarta.persistence.*
+import org.axonframework.commandhandling.CommandHandler
+import org.axonframework.modelling.command.AggregateIdentifier
+import org.axonframework.spring.stereotype.Aggregate
+
+@Entity
+@Aggregate
+class GiftCardStateStoredAggregate(
+
+    @Id
+    @AggregateIdentifier
+    var id: String? = null,
+
+    var balance: Int = 0
+) {
+
+    @CommandHandler
+    constructor(cmd: IssueGiftCardCommand) : this() {
+        if (cmd.initialBalance < 0) throw IllegalArgumentException("Initial balance must be positive")
+        id = cmd.cardId
+        balance = cmd.initialBalance
+    }
+
+    @CommandHandler
+    fun handle(cmd: RedeemGiftCardCommand) {
+        if (cmd.amount > balance) throw IllegalArgumentException("Not enough balance")
+        balance -= cmd.amount
+    }
+}
+```
+
+#### Aggregate Polymorphism
+
+공통된 비즈니스 로직 상속이 가능하다.
+
+```kotlin
+abstract class PaymentAggregateBase { ... }
+class CardPaymentAggregate : PaymentAggregateBase() { ... }
+class BankTransferAggregate : PaymentAggregateBase() { ... }
+```
+
+#### Conflict Resolution
+
+동일한 aggregate에서 여러 커맨드가 병렬 처리될 때 충돌이 발생할 수 있다.
+
+- Axon은 기본적으로 Optimistic Lock 사용
+- 충돌 시 ConcurrencyException 발생
+- ConflictResolver를 통해 해결
+
+```kotlin
+@CommandHandler
+fun handle(cmd: ChangeProductPriceCommand, conflictResolver: ConflictResolver) {
+    // 이전에 누가 이름을 변경했는지 검사
+    conflictResolver.detectConflicts { events ->
+        events.filterIsInstance<ProductRenamedEvent>()
+            .firstOrNull { it.name.contains("비속어") }?.let {
+                throw IllegalStateException("비속어가 포함된 이름으로 변경됨")
+            }
+    }
+
+    apply(ProductPriceChangedEvent(cmd.productId, cmd.newPrice))
+}
+```
+
+#### Command Interceptor 예제
+
+Command Dispatch Interceptor (메시지 전송 직후)
+
+```kotlin
+import org.axonframework.messaging.MessageDispatchInterceptor
+import org.axonframework.commandhandling.CommandMessage
+import org.springframework.stereotype.Component
+import java.util.function.BiFunction
+
+@Component
+class LoggingCommandInterceptor : MessageDispatchInterceptor<CommandMessage<*>> {
+    override fun handle(messages: MutableList<out CommandMessage<*>>): BiFunction<Int, CommandMessage<*>, CommandMessage<*>> {
+        return BiFunction { index, command ->
+            println("📦 [Command Interceptor] Command intercepted [${command.payloadType.simpleName}]: ${command.payload}")
+            command
+        }
+    }
+}
+```
+
+Command Handler Interceptor (핸들러 처리 전후)
+
+```kotlin
+import org.axonframework.commandhandling.CommandHandlerInterceptor
+import org.axonframework.messaging.InterceptorChain
+import org.axonframework.messaging.unitofwork.UnitOfWork
+import org.axonframework.commandhandling.CommandMessage
+import org.springframework.stereotype.Component
+
+@Component
+class LoggingCommandHandlerInterceptor : CommandHandlerInterceptor<Any> {
+
+    override fun handle(
+        unitOfWork: UnitOfWork<out CommandMessage<*>>,
+        interceptorChain: InterceptorChain
+    ): Any {
+        val command = unitOfWork.message.payload
+        println("➡️ [HandlerInterceptor] 처리 시작: ${command::class.simpleName}")
+
+        val result = interceptorChain.proceed() // 실제 CommandHandler 실행
+
+        println("✅ [HandlerInterceptor] 처리 완료: ${command::class.simpleName}, 결과: $result")
+        return result
+    }
+}
+```
+
+## Event
+
+---
+
+### Processing Group
+
+프로세싱 그룹을 정의하면, 같은 그룹 내의 이벤트 처리 방식을 제어할 수 있다.
+
+- 기본적으로 패키지 이름으로 프로세싱 그룹이 설정됨
+- `@ProcessingGroup`으로 명시하는 것을 권장
+- 같은 이벤트를 처리할 때 순서가 중요한 경우 특히 유용
+- 비즈니스 목적/기능 단위로 구성
+
+같은 프로세싱 그룹의 이벤트 핸들러는 등록 순서에 따라 순차적으로 처리 가능하다.
+
+#### 이벤트 프로세싱 그룹 동작 방식
+
+1. Subscribing: 실시간 동기 처리 (리플레이 불가능)
+- 리플레이가 필요 없이 즉시 실행하는 것들
+- Slack, Push, Logging 등에 적합
+
+2. Streaming: 비동기 처리 (리플레이 가능)
+
+동작 방식:
+- StreamableMessageSource로부터 이벤트 스트림을 열어 이벤트를 받아옴
+- 별도의 스레드를 사용하여 이벤트를 처리하므로, 이벤트 발행과 처리가 분리
+- Tracking Token을 사용하여 이벤트 스트림에서의 처리 위치를 추적
+- 이를 통해 중단된 이후 재시작하거나 이벤트 재처리(Replay) 가능
+- 병렬 처리를 지원하여 성능 확장이 용이
+
+주요 특징:
+- 분리된 스레드 사용: 이벤트 발행과 처리가 분리되어 있어, 시스템의 다른 작업과 독립적으로 이벤트 처리
+- 처리 위치 추적: Tracking Token을 통해 현재 처리 중인 이벤트의 위치를 추적하여, 중단된 경우에도 이어서 처리
+- 이벤트 재처리 지원: 특정 시점부터 이벤트를 다시 처리할 수 있어, 시스템의 상태를 재구성하거나 오류를 복구하는데 유용
+- 병렬 처리 및 확장성: 세그먼트(Segment)를 활용하여 이벤트를 병렬로 처리할 수 있어, 성능 향상 가능
+
+Segment
+- 이벤트를 병렬로 처리하기 위해 이벤트 스트림을 나누는 논리적 처리 단위
+- 해시 기반 파티션이라 특정 aggregate의 경우 하나의 segment에서 처리됨(순서 보장)
+- Queue와 비슷한 개념
+
+구현 종류:
+- tracking 모드(단일 스레드) → Axon 기본값
+  - segment 설정을 통해 멀티 스레드 가능 (segment 수 = thread 수)
+- pooled 모드(멀티 스레드, 성능에 좋음)
+  - 대부분의 상황에 추천됨
+  - segment-to-thread-count 비율, 스레드 풀 공유 능력, 적은 이벤트 스트림 개수로 인한 장점
+
+#### 설정 예제
+
+```yaml
+axon:
+  eventhandling:
+    processors:
+      user-view:
+        mode: pooled
+        initialSegmentCount: 10
+        threadCount: 10 # 보통 segment count와 동일하게
+```
+
+#### Dead Letter Queue (DLQ)
+
+이벤트 처리 중 예외가 반복될 경우, 해당 이벤트를 DLQ로 보내고 스킵한다.
+
+- 해당 DLQ에서 Retry 시도 가능
+- [공식 문서 참조](https://docs.axoniq.io/axon-framework-reference/4.11/events/event-processors/dead-letter-queue/)
+
+#### Event Versioning
+
+이벤트 과거 버전과 현재 버전의 호환성을 위해 versioning을 사용합니다.
+
+```kotlin
+@Revision("2")
+data class UserCreatedEvent(
+    val id: String,
+    val name: String,
+    val email: String
+)
+```
+
+Upcast 예제
+```kotlin
+@Component
+class UserCreatedEventUpcaster : SingleEventUpcaster() {
+    override fun canUpcast(eventRepresentation: IntermediateEventRepresentation): Boolean {
+        return eventRepresentation.type.name == "UserCreatedEvent" &&
+               eventRepresentation.revision.isEmpty
+    }
+
+    override fun doUpcast(eventRepresentation: IntermediateEventRepresentation): IntermediateEventRepresentation {
+        return eventRepresentation.upcastPayload(
+            Document.parse("""{"email":"unknown@example.com"}""")
+        )
+    }
+}
+```
+
+## Metadata
+
+---
+
+| 사용 사례 | 설명 |
+|-------------|---------|
+| 🧑‍💼 사용자 정보 전달 | 인증된 사용자 ID, 역할 등 |
+| 🧪 트레이싱 / 로깅 | traceId, correlationId 등 분산 추적용 |
+| 🧠 감시 / 감사 로그 | 이벤트 누가 발생시켰는지 기록 |
+| 🔁 Retry / 재시도 정책 | 재시도 횟수 같은 기술적 속성 |
+| 🧯 에러 처리 | 에러 발생 지점 추적 |
+
+```kotlin
+// write
+val metadata = MetaData.with("userId", "user-123")
+commandGateway.send(MyCommand(...), metadata)
+
+// read
+@EventHandler
+fun on(event: OrderPlacedEvent, @MetaDataValue("userId") userId: String?) {
+    println("이 이벤트는 $userId 가 발생시켰습니다.")
+}
+```
+
+## Query Handler
+
+---
+
+Axon에서는 다양한 쿼리 처리 방식을 지원한다:
+
+- point-to-point: 일반적인 조회 방식
+- scatter-gather: 여러 핸들러를 통해 데이터를 병합
+- subscription: 초기 상태 조회 후, 해당 상태의 변경을 지속적으로 수신, 상태 변경 시 QueryUpdateEmitter 사용
+- streaming: 대량의 데이터를 스트리밍 방식으로 처리하여 클라이언트가 데이터를 점진적으로 수신할 수 있도록 하는 방식, 메모리 최적화 및 지연 시간 감소
+
+## Saga
+
+---
+
+장기 실행 프로세스(Long-lived business process)를 구현할 때 사용하는 핵심 개념이다.
+
+- 여러 단계의 작업(이벤트)을 처리하는데 적합, 보상 트랜잭션 지원
+- `saga_entry` DB에 저장되기 때문에 추적에 용이
+
+```kotlin
+@Saga
+class OrderManagementSaga {
+
+    @Autowired
+    private lateinit var deadlineManager: DeadlineManager
+
+    @Autowired
+    private lateinit var commandGateway: CommandGateway
+
+    private var deadlineId: String? = null
+
+    @StartSaga
+    @SagaEventHandler(associationProperty = "orderId")
+    fun on(event: OrderPlacedEvent) {
+        println("📦 주문 접수 - Saga 시작")
+
+        // orderId를 기준으로 Saga 인스턴스에 이벤트 라우팅 연결
+        associateWith("orderId", event.orderId)
+
+        // 15분 안에 결제 안 되면 주문 취소
+        deadlineId = deadlineManager.schedule(
+            Duration.ofMinutes(15),
+            "payment-deadline",
+            event.orderId
+        )
+    }
+
+    @SagaEventHandler(associationProperty = "orderId")
+    fun on(event: PaymentConfirmedEvent) {
+        println("💳 결제 완료 - 배송 시작")
+        
+        // shipmentId를 기준으로 Saga 인스턴스에 이벤트 라우팅 연결 추가
+        associateWith("shipmentId", event.shipmentId)
+
+        // 결제 완료되면 예약된 deadline 취소
+        deadlineId?.let {
+            deadlineManager.cancelSchedule("payment-deadline", it)
+        }
+
+        commandGateway.send(StartDeliveryCommand(event.orderId))
+    }
+    
+    @SagaEventHandler(associationProperty = "orderId")
+    fun on(event: PaymentFailedEvent) {
+        println("💥 결제 실패 - 주문 취소 보상 트랜잭션 실행")
+        val command = CancelOrderCommand(event.orderId)
+        commandGateway.send(command)
+    }
+
+    @EndSaga
+    @SagaEventHandler(associationProperty = "orderId")
+    fun on(event: OrderCancelledEvent) {
+    }
+
+    @SagaEventHandler(associationProperty = "shipmentId")
+    @EndSaga
+    fun on(event: DeliveryCompletedEvent) {
+        println("🚚 배송 완료 - Saga 종료")
+    }
+
+    @DeadlineHandler(deadlineName = "payment-deadline")
+    fun handlePaymentTimeout(orderId: String) {
+        println("⏰ 결제 기한 초과 - 주문 취소")
+
+        commandGateway.send(CancelOrderCommand(orderId))
+    }
+}
+```
+
+### 주요 개념
+
+- `associationProperty`: Saga 이벤트 수신을 위한 key
+  - `associateWith`: saga associate key 추가
+  - `removeAssociationWith`: saga associate key 제거
+- `DeadlineManager`: 일정 시간이 지난 후 특정 작업을 수행
+
+## Tuning
+
+---
+
+성능 최적화를 위한 주요 기능들:
+
+- Event Snapshots: 이벤트 스토어에서 aggregate 재구성 시 성능 향상
+- Cache: 자주 사용되는 aggregate나 projection 데이터 캐싱
+
+## 마치며
+
+---
+
+&nbsp;&nbsp;&nbsp;Axon Framework는 Event Sourcing과 CQRS 패턴을 구현하는데 있어 매우 강력하고 포괄적인 도구다. 복잡한 비즈니스 로직을 이벤트 기반으로 분해하고, 확장 가능한 아키텍처를 구성하는데 큰 도움이 된다. 특히 MSA 환경에서 서비스 간 일관성 유지와 장기 실행 프로세스 관리에 탁월한 기능을 제공한다.
+
+&nbsp;&nbsp;&nbsp;하지만 Event Sourcing과 CQRS 자체가 복잡한 패턴이므로, 도입 전에 충분한 학습과 팀 내 합의가 필요하다. 또한 기존 CRUD 방식에 익숙한 개발자들에게는 러닝 커브가 있을 수 있으니, 단계적으로 적용하는 것을 권장한다.
