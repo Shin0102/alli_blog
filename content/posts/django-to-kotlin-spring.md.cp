@@ -73,7 +73,7 @@ eventsourcing/
 │   └── src/main/kotlin/<도메인>/
 │       ├── aggregate/    # Domain
 │       ├── application/  # Port, Service
-│       └── adapter/     
+│       └── adapter/      # Adapter
 │           └── inbound/     
 │           └── outbound/     
 ├── <도메인>-api/        # 해당 도메인의 Command·Event·DTO 정의
@@ -118,7 +118,7 @@ eventsourcing/
 
 ### 시행착오
 
-&nbsp;&nbsp;&nbsp;아무래도 제일 힘들었던 점은 초반 프로젝트 구조를 잡는 작업이었다. Django는 초기 프로젝트 셋업이 매우 간단한 편이다. 반면 Spring Boot는 config를 직접 작성해 의존성을 주입해줘야 했고, 이 과정에서 실수가 많이 발생했다(런타임에 설정 오류가 발목을 잡는 케이스가 잦았다). 추가적으로 JPA, Serializer 설정을 하는 데 꽤 삽질을 했는데, 자세한 내용은 다음 파트에서 다룬다.
+&nbsp;&nbsp;&nbsp;아무래도 제일 힘들었던 점은 초반 프로젝트 구조를 잡는 작업이었다. Django는 초기 프로젝트 셋업이 매우 간단한 편이다. 반면 Spring Boot는 config를 직접 작성해 의존성을 주입해줘야 했고, 이 과정에서 실수가 많이 발생했다(런타임에 설정 오류가 발목을 잡는 케이스가 잦았다). 추가적으로 JPA, Serializer 설정을 하는 데 꽤 삽질을 했는데, 자세한 내용은 다음 TroubleShooting 부분에서 작성해보려 한다.
 
 &nbsp;&nbsp;&nbsp;그리고 코드가 Zero인 상태로 여럿이 함께 작업하다 보니 코드 일관성이 지켜지지 않았다. 프로젝트 초기에 AI 코드 지침 파일도 만들어 따르도록 강제했지만, 생각보다 버그도 많았고 제대로 따르지 않는 경우가 잦았다. 그래서 [konsist](https://github.com/LemonAppDev/konsist)를 도입해 코드 일관성을 강제했고(의존성 방향, 클래스명, 패턴 강제) 결과는 훨씬 성공적이었다. 어느 정도 코드 구조가 잡힌 이후로는 빠르게 마이그레이션을 진행할 수 있었다.
 
@@ -126,17 +126,15 @@ eventsourcing/
 
 ---
 
-&nbsp;&nbsp;&nbsp;이번 파트에서는 프로젝트를 진행하면서 겪은 TroubleShooting 들을 정리해보려 한다.
+&nbsp;&nbsp;&nbsp;이번엔 프로젝트를 진행하면서 겪은 TroubleShooting 들을 정리해보려 한다.
 
 ### Serializer
 
-&nbsp;&nbsp;&nbsp;Axon의 기본 Serializer는 XStream이다. 하지만 XML 기반이라 가독성이 떨어지고, 범용성과 호환성을 생각해 Jackson serializer로 바꿨는데, 정작 Kotlin + Jackson + Axon 조합에서 예상치 못한 직렬화 오류가 발생하였다.
+&nbsp;&nbsp;&nbsp;Axon의 기본 Serializer는 XStream이다. 하지만 XML 기반이라 가독성이 떨어지고, 범용성과 호환성을 생각해 Jackson serializer로 바꿨는데, Kotlin + Jackson + Axon 조합에서 예상치 못한 오류가 발생하였다.
 
-**① Aggregate 역직렬화 실패 — Kotlin backing field 접근 문제**
-
-&nbsp;&nbsp;&nbsp;가장 먼저 막힌 지점이다. 이벤트 소싱은 Aggregate를 이벤트 replay로 복원하지만, 이벤트가 쌓일수록 매번 전체를 replay하는 비용이 커진다. 그래서 Axon은 일정 개수마다 Aggregate 상태 전체를 **스냅샷으로 직렬화해 저장**해두고, 다음 로드 때는 스냅샷 이후의 이벤트만 replay한다. 문제는 바로 이 스냅샷 직렬화 지점에서 터졌다. Jackson이 Aggregate의 상태 필드를 읽어야 하는데 계속 깨졌고, 원인은 Kotlin의 접근 제어였다. 상태를 노출하는 getter를 `internal`로 선언해뒀는데, JVM 리플렉션 기반의 Jackson이 이 필드를 프로퍼티로 인식하지 못한 것이다.
-
-&nbsp;&nbsp;&nbsp;Django/Python에서는 겪을 일이 없던 종류의 문제였다. Python은 동적 타입이고 접근 제어도 관례 수준이라, 직렬화기가 객체 속성을 사실상 제약 없이 들여다본다. 반면 Kotlin은 정적 타입에 `internal`·`private` 같은 명시적 가시성이 있어서, 직렬화기에게 "이 필드를 읽어도 된다"고 명시적으로 열어줘야 한다.
+**1. Aggregate 역직렬화 실패 — Kotlin backing field 접근 문제**
+&nbsp;&nbsp;&nbsp;이벤트 소싱은 Aggregate를 이벤트 replay로 복원하지만, 이벤트가 쌓일수록 매번 전체를 replay하는 비용이 커진다. 그래서 Axon의 Snapshot 기능을 활용해 Aggregate 상태 전체를 저장해두고, 다음 로드 때는 스냅샷 이후의 이벤트만 replay하도록 하였다. 문제는 바로 이 Snapshot 저장시점에서 발생했다. Jackson이 Aggregate의 상태 필드를 읽어야 하는데 계속 에러가 발생했고, 원인은 Kotlin의 접근 제어였다. 상태를 노출하는 getter를 `internal`로 선언해뒀는데(모듈 경계를 지키기위해), Jackson이 이 필드를 프로퍼티로 인식하지 못한 것이었다.
+&nbsp;&nbsp;&nbsp;Python에서는 동적 타입이고 별도의 접근제어가 없어 겪을 일이 없던 문제였는데, Kotlin은 정적 타입에 `internal`·`private` 과 같이 접근제어를 지정할수 있기 때문에 해당 문제가 발생했었다.
 
 ```kotlin
 // Before — Jackson이 접근 못 함
@@ -146,11 +144,9 @@ internal fun getAccountInfo(): AccountInfo = accountInfo
 fun getAccountInfo(): AccountInfo = accountInfo
 ```
 
-&nbsp;&nbsp;&nbsp;`internal`을 `public`으로 여는 단순한 수정이었지만, 같은 문제를 Aggregate 7개에서 반복해 만났다. "직렬화기가 객체 내부를 어떻게 들여다보는가"를 이해하지 못하면 원인조차 못 찾는, 언어의 특성이 그대로 드러나는 종류의 버그였다.
-
-**② List 필드의 null**
-
-&nbsp;&nbsp;&nbsp;이벤트 스키마는 시간이 지나며 진화한다. 예전 이벤트엔 없던 리스트 필드가 새로 생기는 식인데, 문제는 Event Store에 **과거 이벤트가 그대로 남아 있다**는 점이다. 새 코드로 옛 이벤트를 역직렬화하면 JSON에 그 필드가 아예 없고, Kotlin의 non-null `List<T>` 자리에 값이 채워지지 못해 그대로 터졌다.
+&nbsp;
+**2. List 필드의 null**
+&nbsp;&nbsp;&nbsp;이벤트 스키마는 시간이 지나며 진화한다. 예전 이벤트엔 없던 리스트 필드가 새로 생기는 식인데, 문제는 Event Store에 **과거 이벤트가 그대로 남아 있다**는 점이다. 새 코드로 옛 이벤트를 역직렬화하면 JSON에 그 필드가 아예 없고, Kotlin의 non-null `List<T>` 자리에 값이 채워지지 못해 문제가 발생하였다.
 
 &nbsp;&nbsp;&nbsp;이것도 Django였다면 크게 문제되지 않았을 지점이다. Python은 필드가 없으면 그냥 None이나 기본값으로 넘어가지만, Kotlin의 null 안전성은 "리스트 타입인데 값이 없다"를 그냥 넘기지 않는다. 강점인 타입 시스템이 스키마가 진화하는 경계에서는 오히려 발목을 잡은 셈이다. 해결은 단순했다. 리스트 계열 필드를 전부 `emptyList()`로 기본값을 줘서 "없으면 빈 리스트"로 통일했다.
 
