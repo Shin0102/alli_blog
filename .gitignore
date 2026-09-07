@@ -7,3 +7,6 @@
 
 # macOS
 .DS_Store
+
+# Hugo 에셋 캐시 (빌드 시 자동 생성)
+/resources/_gen/
