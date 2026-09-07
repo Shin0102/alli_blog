@@ -11,7 +11,7 @@ tags:
   - EDA
   - Migration
 categories:
-  - Migration
+  - migration
 ---
 
 ## 들어가며

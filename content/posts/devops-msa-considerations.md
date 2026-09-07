@@ -7,7 +7,7 @@ description:
 image: images/msa.png
 meta_image: static/images/msa.png
 tags:
-- MSA
+- msa
 categories:
 - devops
 ---
